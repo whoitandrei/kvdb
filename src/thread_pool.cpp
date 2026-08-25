@@ -1,6 +1,8 @@
 #include "thread_pool.hpp"
 #include <iostream>
 #include <mutex>
+#include <stdexcept>
+#include <thread>
 
 ThreadPool::ThreadPool(std::size_t worker_count) {
     try {
@@ -40,6 +42,11 @@ bool ThreadPool::submit(std::function<void()> task) {
 }
 
 void ThreadPool::shutdown() {
+    for (auto& worker : workers_) {
+        if (worker.get_id() == std::this_thread::get_id()) {
+            throw std::runtime_error("ThreadPool::shutdown() called from a pool worker");
+        }
+    }
     std::call_once(stop_flag_, [this] {
         {
             std::lock_guard<std::mutex> lock(tasks_mutex_);
