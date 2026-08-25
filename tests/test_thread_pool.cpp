@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
 #include "thread_pool.hpp"
 #include <atomic>
+#include <gtest/gtest.h>
 
 TEST(ThreadPoolTest, ExecutesAllSubmittedTasks) {
     constexpr int kTaskCount = 1000;

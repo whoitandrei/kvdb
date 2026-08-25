@@ -14,10 +14,9 @@ ThreadPool::ThreadPool(std::size_t worker_count) {
         }
     } catch (...) {
         std::cerr << "[LOG] exception occurred while initializing thread pool" << std::endl;
-        shutdown(); 
+        shutdown();
         throw;
     }
-
 }
 
 ThreadPool::~ThreadPool() {
@@ -70,7 +69,7 @@ void ThreadPool::worker_thread() {
 
         try {
             task();
-        } catch(std::exception& e) {
+        } catch (std::exception& e) {
             std::cerr << "[LOG] exception occurred in task execution: " << e.what() << std::endl;
         } catch (...) {
             std::cerr << "[LOG] exception occurred in task execution" << std::endl;
