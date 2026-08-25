@@ -1,17 +1,18 @@
-#include <functional>
-#include <thread>
-#include <mutex>
+#pragma once
 #include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
 
 class ThreadPool {
-    public:
+  public:
     explicit ThreadPool(std::size_t worker_count = std::thread::hardware_concurrency());
     ~ThreadPool();
 
-    ThreadPool(const ThreadPool&)            = delete;
+    ThreadPool(const ThreadPool&) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
-    ThreadPool(ThreadPool&&)                 = delete;
-    ThreadPool& operator=(ThreadPool&&)      = delete;
+    ThreadPool(ThreadPool&&) = delete;
+    ThreadPool& operator=(ThreadPool&&) = delete;
 
     bool submit(std::function<void()> task);
     void shutdown();
@@ -22,7 +23,7 @@ class ThreadPool {
         return tasks_.size();
     }
 
-private:
+  private:
     void worker_thread();
 
     std::vector<std::thread> workers_;
@@ -31,5 +32,4 @@ private:
     std::condition_variable condition_;
     std::once_flag stop_flag_;
     bool stop_ = false;
-
 };
