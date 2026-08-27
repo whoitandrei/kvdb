@@ -1,10 +1,13 @@
 #pragma once
 #include "socket.hpp"
 #include <cstdint>
+#include <functional>
 #include <sys/socket.h>
 
 class TcpServer {
 public:
+    using Handler = std::function<void(Socket)>;
+
     explicit TcpServer(std::uint16_t port, int backlog = SOMAXCONN);
     ~TcpServer() = default;
 
@@ -15,7 +18,7 @@ public:
 
     std::uint16_t port() const noexcept { return port_; }
 
-    void run();
+    void run(Handler handler);
 
 private:
     Socket socket_;

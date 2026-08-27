@@ -9,7 +9,10 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <system_error>
+#include <thread>
 #include <unistd.h>
+
+using namespace std::chrono_literals;
 
 TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
     int fd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -29,8 +32,8 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
         throw_errno("setsockopt");
     }
 
-    if (::bind(socket_.get(), reinterpret_cast<sockaddr*>(&server_address), sizeof(server_address)) !=
-        SUCCESS_RETURN) {
+    if (::bind(socket_.get(), reinterpret_cast<sockaddr*>(&server_address),
+               sizeof(server_address)) != SUCCESS_RETURN) {
         throw_errno("bind");
     }
     std::cerr << GREEN << "[LOG]" << RESET << "socket bind succesfully" << std::endl;
@@ -38,7 +41,7 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
     if (::listen(socket_.get(), backlog) != SUCCESS_RETURN) {
         throw_errno("listen");
     }
-    std::cerr << GREEN << "[LOG]" << RESET << "listen() set succesfully. Ready to accept"
+    std::cerr << GREEN << "[LOG]" << RESET << "listen() set succesfully. Ready to accept on port " << port_
               << std::endl;
 
     sockaddr_in actual{};
@@ -49,11 +52,28 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
     port_ = ntohs(actual.sin_port);
 }
 
-void TcpServer::run() {
-    sockaddr_in cli{};
-    socklen_t len = sizeof(cli);
-    int connfd = accept(socket_.get(), reinterpret_cast<sockaddr*>(&cli), &len);
-    if (connfd < 0) {
-        throw_errno("accept");
+void TcpServer::run(Handler handler) {
+    while (true) {
+        int connfd = ::accept(socket_.get(), nullptr, nullptr);
+        if (connfd == ERR_RETURN) {
+            switch (errno) {
+                case EINTR:
+                case ECONNABORTED: continue;
+                case ENFILE:
+                case EMFILE: std::this_thread::sleep_for(10ms); continue;
+                case EBADF:
+                case EINVAL: return;
+                default: throw_errno("accept");
+            }
+        }
+
+        Socket client_socket(connfd);
+        try {
+            handler(std::move(client_socket));
+        } catch (const std::exception& e) {
+            std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run(): " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run()" << std::endl;
+        }
     }
 }
