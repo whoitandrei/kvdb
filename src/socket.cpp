@@ -36,3 +36,7 @@ void Socket::reset(int fd) noexcept {
 void Socket::swap(Socket& other) noexcept {
     std::swap(fd_, other.fd_);
 }
+
+bool Socket::valid() const noexcept {
+    return fd_ != kInvalid;
+}

@@ -25,3 +25,4 @@ endfunction()
 
 add_kvdb_test(thread_pool_test test_thread_pool.cpp)
 add_kvdb_test(socket_test      test_socket.cpp)
+add_kvdb_test(tcp_server_test  test_tcp_server.cpp)
