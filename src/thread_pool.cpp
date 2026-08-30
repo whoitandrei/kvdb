@@ -31,7 +31,7 @@ ThreadPool::~ThreadPool() {
     }
 }
 
-bool ThreadPool::submit(std::function<void()> task) {
+bool ThreadPool::submit(Task task) {
     {
         std::lock_guard<std::mutex> lock(tasks_mutex_);
         if (stop_) {
@@ -65,7 +65,7 @@ void ThreadPool::shutdown() {
 
 void ThreadPool::worker_thread() {
     while (true) {
-        std::function<void()> task;
+        Task task;
         {
             std::unique_lock<std::mutex> lock(tasks_mutex_);
             condition_.wait(lock, [this] { return stop_ || !tasks_.empty(); });

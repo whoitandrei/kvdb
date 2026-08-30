@@ -3,6 +3,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include "task.hpp"
 
 class ThreadPool {
   public:
@@ -14,7 +15,7 @@ class ThreadPool {
     ThreadPool(ThreadPool&&) = delete;
     ThreadPool& operator=(ThreadPool&&) = delete;
 
-    bool submit(std::function<void()> task);
+    bool submit(Task task);
     void shutdown();
 
     size_t worker_count() const { return workers_.size(); }
@@ -27,7 +28,7 @@ class ThreadPool {
     void worker_thread();
 
     std::vector<std::thread> workers_;
-    std::queue<std::function<void()>> tasks_;
+    std::queue<Task> tasks_;
     std::mutex tasks_mutex_;
     std::condition_variable condition_;
     std::once_flag stop_flag_;
