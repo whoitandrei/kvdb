@@ -6,7 +6,9 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <stdexcept>
+#include <sys/pipe.h>
 #include <sys/socket.h>
+#include <poll.h>
 #include <system_error>
 #include <thread>
 #include <unistd.h>
@@ -49,40 +51,68 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
         throw_errno("getsockname");
     }
     port_ = ntohs(actual.sin_port);
+
+    int fds[2];
+    if (::pipe(fds) == ERR_RETURN) {
+        throw_errno("pipe");
+    }
+    wake_read_.reset(fds[0]);
+    wake_write_.reset(fds[1]);
 }
 
 void TcpServer::run(ThreadPool& pool, Handler handler) {
+    pollfd fds[2] = {
+        {socket_.get(), POLLIN, 0},
+        {wake_read_.get(), POLLIN, 0},
+    };
+
     while (true) {
-        int connfd = ::accept(socket_.get(), nullptr, nullptr);
-        if (connfd == ERR_RETURN) {
-            switch (errno) {
-            case EINTR:
-            case ECONNABORTED:
+        int n = ::poll(fds, 2, -1);
+
+        if (n == ERR_RETURN) {
+            if (errno == EINTR) {
                 continue;
-            case ENFILE:
-            case EMFILE:
-                std::this_thread::sleep_for(10ms);
-                continue;
-            case EBADF:
-            case EINVAL:
-                return;
-            default:
-                throw_errno("accept");
             }
+            throw_errno("poll");
         }
 
-        Socket client_socket(connfd);
+        if (fds[1].revents & POLLIN) {
+            return;
+        }
 
-        // catch the submit throws (not the handler throws)
-        try {
-            pool.submit(
-                [handler, sock = std::move(client_socket)]() mutable { handler(std::move(sock)); });
-        } catch (const std::exception& e) {
-            std::cerr << RED "[ERROR] " << RESET
-                      << "exception occurred in TcpServer::run(): " << e.what() << std::endl;
-        } catch (...) {
-            std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run()"
-                      << std::endl;
+        if (fds[0].revents & POLLIN) {
+            int connfd = ::accept(socket_.get(), nullptr, nullptr);
+            if (connfd == ERR_RETURN) {
+                switch (errno) {
+                case EINTR:
+                case ECONNABORTED:
+                    continue;
+                case ENFILE:
+                case EMFILE:
+                    std::this_thread::sleep_for(10ms);
+                    continue;
+                case EBADF:
+                case EINVAL:
+                    return;
+                default:
+                    throw_errno("accept");
+                }
+            }
+
+            Socket client_socket(connfd);
+
+            // catch the submit throws (not the handler throws)
+            try {
+                pool.submit([handler, sock = std::move(client_socket)]() mutable {
+                    handler(std::move(sock));
+                });
+            } catch (const std::exception& e) {
+                std::cerr << RED "[ERROR] " << RESET
+                          << "exception occurred in TcpServer::run(): " << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run()"
+                          << std::endl;
+            }
         }
     }
 }

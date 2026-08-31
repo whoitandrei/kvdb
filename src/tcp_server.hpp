@@ -21,8 +21,11 @@ public:
     std::uint16_t port() const noexcept { return port_; }
 
     void run(ThreadPool& pool, Handler handler);
+    void stop();
 
 private:
     Socket socket_;
     std::uint16_t port_ = 0;
+    Socket wake_read_;
+    Socket wake_write_;
 };
