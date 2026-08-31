@@ -116,3 +116,10 @@ void TcpServer::run(ThreadPool& pool, Handler handler) {
         }
     }
 }
+
+void TcpServer::stop() {
+    char byte = 0;
+    if (::write(wake_write_.get(), &byte, sizeof(byte)) == ERR_RETURN) {
+        throw_errno("write");
+    }
+}

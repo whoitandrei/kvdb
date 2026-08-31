@@ -32,8 +32,8 @@ target_compile_options(kvdb_lib PRIVATE -Wall -Wextra -Wpedantic)
 find_package(Threads REQUIRED)
 target_link_libraries(kvdb_lib PUBLIC Threads::Threads)
 
-# add_executable(kvdb src/main.cpp)
-# target_link_libraries(kvdb PRIVATE kvdb_lib)
+add_executable(kvdb src/main.cpp)
+target_link_libraries(kvdb PRIVATE kvdb_lib)
 
 enable_testing()
 add_subdirectory(tests)
