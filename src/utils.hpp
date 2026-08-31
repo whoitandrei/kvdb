@@ -8,6 +8,6 @@
 #define ERR_RETURN -1
 #define SUCCESS_RETURN 0
 
-[[noreturn]] void throw_errno(const char* what) {
+[[noreturn]] inline void throw_errno(const char* what) {
     throw std::system_error(errno, std::system_category(), what);
 }

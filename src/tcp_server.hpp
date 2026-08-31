@@ -1,5 +1,7 @@
 #pragma once
 #include "socket.hpp"
+#include "thread_pool.hpp"
+#include "utils.hpp"
 #include <cstdint>
 #include <functional>
 #include <sys/socket.h>
@@ -18,7 +20,7 @@ public:
 
     std::uint16_t port() const noexcept { return port_; }
 
-    void run(Handler handler);
+    void run(ThreadPool& pool, Handler handler);
 
 private:
     Socket socket_;

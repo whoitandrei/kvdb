@@ -1,5 +1,4 @@
 #include "thread_pool.hpp"
-#include "utils.hpp"
 
 #include <iostream>
 #include <mutex>

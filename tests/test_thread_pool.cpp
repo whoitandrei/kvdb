@@ -114,26 +114,25 @@ TEST(ThreadPoolBasicTest, EmptyPoolShutsDownCleanly) {
 
 TEST(ThreadPoolConcurrencyTest, TasksRunOnDifferentThreads) {
     constexpr int kWorkers = 4;
-    Latch          latch(kWorkers);
-    std::mutex     mutex;
+    Latch arrived(kWorkers);
+    std::mutex mutex;
     std::set<std::thread::id> ids;
 
-    {
-        ThreadPool pool(kWorkers);
-        for (int i = 0; i < kWorkers; ++i) {
-            pool.submit([&] {
-                {
-                    std::lock_guard<std::mutex> lock(mutex);
-                    ids.insert(std::this_thread::get_id());
-                }
-                latch.count_down();
-            });
-        }
-        ASSERT_TRUE(latch.wait_for(kTimeout)) << "tasks did not finish in time";
-        pool.shutdown();
+    ThreadPool pool(kWorkers);
+    for (int i = 0; i < kWorkers; ++i) {
+        pool.submit([&] {
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                ids.insert(std::this_thread::get_id());
+            }
+            arrived.count_down();
+            arrived.wait_for(kTimeout);
+        });
     }
+    ASSERT_TRUE(arrived.wait_for(kTimeout));
+    pool.shutdown();
 
-    EXPECT_GT(ids.size(), 1u) << "a single thread ran everything";
+    EXPECT_EQ(ids.size(), static_cast<size_t>(kWorkers));
 }
 
 TEST(ThreadPoolConcurrencyTest, TasksRunInParallel) {

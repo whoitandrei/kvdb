@@ -1,5 +1,4 @@
 #include "tcp_server.hpp"
-#include "utils.hpp"
 
 #include <cerrno>
 #include <cstddef>
@@ -41,8 +40,8 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
     if (::listen(socket_.get(), backlog) != SUCCESS_RETURN) {
         throw_errno("listen");
     }
-    std::cerr << GREEN << "[LOG]" << RESET << "listen() set succesfully. Ready to accept on port " << port_
-              << std::endl;
+    std::cerr << GREEN << "[LOG]" << RESET << "listen() set succesfully. Ready to accept on port "
+              << port_ << std::endl;
 
     sockaddr_in actual{};
     socklen_t len = sizeof(actual);
@@ -52,28 +51,38 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
     port_ = ntohs(actual.sin_port);
 }
 
-void TcpServer::run(Handler handler) {
+void TcpServer::run(ThreadPool& pool, Handler handler) {
     while (true) {
         int connfd = ::accept(socket_.get(), nullptr, nullptr);
         if (connfd == ERR_RETURN) {
             switch (errno) {
-                case EINTR:
-                case ECONNABORTED: continue;
-                case ENFILE:
-                case EMFILE: std::this_thread::sleep_for(10ms); continue;
-                case EBADF:
-                case EINVAL: return;
-                default: throw_errno("accept");
+            case EINTR:
+            case ECONNABORTED:
+                continue;
+            case ENFILE:
+            case EMFILE:
+                std::this_thread::sleep_for(10ms);
+                continue;
+            case EBADF:
+            case EINVAL:
+                return;
+            default:
+                throw_errno("accept");
             }
         }
 
         Socket client_socket(connfd);
+
+        // catch the submit throws (not the handler throws)
         try {
-            handler(std::move(client_socket));
+            pool.submit(
+                [handler, sock = std::move(client_socket)]() mutable { handler(std::move(sock)); });
         } catch (const std::exception& e) {
-            std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run(): " << e.what() << std::endl;
+            std::cerr << RED "[ERROR] " << RESET
+                      << "exception occurred in TcpServer::run(): " << e.what() << std::endl;
         } catch (...) {
-            std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run()" << std::endl;
+            std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run()"
+                      << std::endl;
         }
     }
 }
