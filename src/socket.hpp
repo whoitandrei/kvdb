@@ -20,6 +20,7 @@ class Socket {
     // it may be UB if calling `s.reset(s.get())` or `s.reset(some_unstable_fd)`
     void reset(int fd = kInvalid) noexcept;
     void swap(Socket& other) noexcept;
+    bool valid() const noexcept;
 
     friend void swap(Socket& a, Socket& b) noexcept { a.swap(b); }
 
