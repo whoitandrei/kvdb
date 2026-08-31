@@ -3,6 +3,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <queue>
 #include "task.hpp"
 
 class ThreadPool {

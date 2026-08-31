@@ -6,7 +6,6 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <stdexcept>
-#include <sys/pipe.h>
 #include <sys/socket.h>
 #include <poll.h>
 #include <system_error>

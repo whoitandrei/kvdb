@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feature/ci-cd]
+  pull_request:
+    branches: [main]
+
+env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+
+jobs:
+  build:
+    name: build (${{ matrix.build_type }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, TSan, ASan]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache GoogleTest FetchContent
+        uses: actions/cache@v4
+        with:
+          path: build/${{ matrix.build_type }}/_deps
+          key: gtest-${{ matrix.build_type }}-${{ hashFiles('tests/CMakeLists.txt') }}
+
+      - name: Configure
+        run: >
+          cmake -B build/${{ matrix.build_type }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        run: cmake --build build/${{ matrix.build_type }}
+
+      - name: Upload build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.build_type }}
+          path: build/${{ matrix.build_type }}
+          retention-days: 1
+
+
+
+  test:
+    name: test (${{ matrix.build_type }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, TSan, ASan]
+
+    env:
+      TSAN_OPTIONS: halt_on_error=1
+      ASAN_OPTIONS: halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build directory
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ matrix.build_type }}
+          path: build/${{ matrix.build_type }}
+
+      - name: Restore executable permissions
+        run: chmod -R +x build/${{ matrix.build_type }}/tests
+
+      - name: Run tests
+        run: >
+          ctest --test-dir build/${{ matrix.build_type }}
+          --output-on-failure
+          --timeout 60
