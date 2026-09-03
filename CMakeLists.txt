@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(kvdb CXX)
 
+option(BUILD_BENCHMARK "Build the load-testing benchmark tool (fetches HdrHistogram_c)" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -29,6 +31,7 @@ add_library(kvdb_lib STATIC
     src/store.cpp
     src/protocol.cpp
     src/handler.cpp
+    src/logger.cpp
 )
 target_include_directories(kvdb_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(kvdb_lib PRIVATE -Wall -Wextra -Wpedantic)
@@ -40,3 +43,7 @@ target_link_libraries(kvdb PRIVATE kvdb_lib)
 
 enable_testing()
 add_subdirectory(tests)
+
+if(BUILD_BENCHMARK)
+    add_subdirectory(tools)
+endif()
