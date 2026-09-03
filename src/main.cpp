@@ -1,6 +1,9 @@
 #include "socket.hpp"
+#include "store.hpp"
 #include "tcp_server.hpp"
 #include "thread_pool.hpp"
+#include "utils.hpp"
+#include "handler.hpp"
 
 #include <csignal>
 #include <cstdio>
@@ -18,29 +21,12 @@ TcpServer* g_server = nullptr;
     }
 }
 
-void handle_connection(Socket client) {
-    char buf[4096];
-    while (true) {
-        ssize_t n = ::read(client.get(), buf, sizeof(buf));
-
-        if (n == 0) {
-            return;
-        }
-        if (n < 0) {
-            if (errno == EINTR)
-                continue;
-            return;
-        }
-
-        ::write(client.get(), buf, static_cast<std::size_t>(n));
-    }
-}
-
 } // namespace
 
 int main() {
     ::signal(SIGPIPE, SIG_IGN);
 
+    Store store;
     ThreadPool pool(4);
     TcpServer server(8888);
 
@@ -49,7 +35,9 @@ int main() {
 
     std::cerr << "listening on port " << server.port() << '\n';
 
-    server.run(pool, handle_connection);
+    server.run(pool, [&store](Socket client) {
+        handle_connection(std::move(client), store);
+    });
 
     std::cerr << "server stopped\n";
     return 0;
