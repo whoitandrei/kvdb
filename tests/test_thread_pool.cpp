@@ -295,7 +295,7 @@ TEST(ThreadPoolShutdownTest, DestructorAfterExplicitShutdownIsSafe) {
 // ===========================================================================
 
 // TODO: rewrite the logger and exception throwing with std::cerr
-TEST(DISABLED_ThreadPollExceptionTest, PoolSurvivesThrowingTasks) {
+TEST(ThreadPollExceptionTest, PoolSurvivesThrowingTasks) {
     constexpr int kTaskCount = 100;
     std::atomic<int> done{0};
 
