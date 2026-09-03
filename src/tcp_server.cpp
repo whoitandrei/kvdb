@@ -1,4 +1,5 @@
 #include "tcp_server.hpp"
+#include "logger.hpp"
 
 #include <cerrno>
 #include <cstddef>
@@ -20,7 +21,7 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
     if (!socket_) {
         throw_errno("socket");
     }
-    std::cerr << GREEN << "[LOG]" << RESET << "socket created succesfully" << std::endl;
+    LOG_INFO() << "socket created succesfully";
 
     sockaddr_in server_address{};
     server_address.sin_family = AF_INET;
@@ -36,13 +37,13 @@ TcpServer::TcpServer(std::uint16_t port, int backlog) : port_(port) {
                sizeof(server_address)) != SUCCESS_RETURN) {
         throw_errno("bind");
     }
-    std::cerr << GREEN << "[LOG]" << RESET << "socket bind succesfully" << std::endl;
+    LOG_INFO() << "socket bind succesfully";
 
     if (::listen(socket_.get(), backlog) != SUCCESS_RETURN) {
         throw_errno("listen");
     }
-    std::cerr << GREEN << "[LOG]" << RESET << "listen() set succesfully. Ready to accept on port "
-              << port_ << std::endl;
+    LOG_INFO() << "listen() set succesfully. Ready to accept on port "
+              << port_ << " with backlog " << backlog;
 
     sockaddr_in actual{};
     socklen_t len = sizeof(actual);
@@ -106,11 +107,9 @@ void TcpServer::run(ThreadPool& pool, Handler handler) {
                     handler(std::move(sock));
                 });
             } catch (const std::exception& e) {
-                std::cerr << RED "[ERROR] " << RESET
-                          << "exception occurred in TcpServer::run(): " << e.what() << std::endl;
+                LOG_ERROR() << "exception occurred in TcpServer::run(): " << e.what();
             } catch (...) {
-                std::cerr << RED "[ERROR] " << RESET << "exception occurred in TcpServer::run()"
-                          << std::endl;
+                LOG_ERROR() << "exception occurred in TcpServer::run()";
             }
         }
     }

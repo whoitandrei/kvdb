@@ -16,8 +16,6 @@ class Socket {
     explicit operator bool() const noexcept;
     int release() noexcept;
 
-    // reset implement the stupid logic of closing the old fd and taking ownership of the new one.
-    // it may be UB if calling `s.reset(s.get())` or `s.reset(some_unstable_fd)`
     void reset(int fd = kInvalid) noexcept;
     void swap(Socket& other) noexcept;
     bool valid() const noexcept;

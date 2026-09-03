@@ -1,4 +1,6 @@
 #include "thread_pool.hpp"
+#include "logger.hpp"
+#include "utils.hpp"
 
 #include <iostream>
 #include <mutex>
@@ -9,14 +11,14 @@ ThreadPool::ThreadPool(std::size_t worker_count) {
     try {
         if (worker_count == 0) {
             worker_count = 1;
-            std::cerr << "[LOG] worker count is 0, defaulting to 1" << std::endl;
+            LOG_INFO() << "worker count is 0, defaulting to 1";
         }
         workers_.reserve(worker_count);
         for (std::size_t i = 0; i < worker_count; ++i) {
             workers_.emplace_back(&ThreadPool::worker_thread, this);
         }
     } catch (...) {
-        std::cerr << "[LOG] exception occurred while initializing thread pool" << std::endl;
+        LOG_ERROR() << "exception occurred while initializing thread pool";
         shutdown();
         throw;
     }
@@ -26,7 +28,7 @@ ThreadPool::~ThreadPool() {
     try {
         shutdown();
     } catch (...) {
-        std::cerr << "[LOG] exception occurred while shutting down thread pool" << std::endl;
+        LOG_ERROR() << "exception occurred while shutting down thread pool";
     }
 }
 
@@ -45,7 +47,7 @@ bool ThreadPool::submit(Task task) {
 void ThreadPool::shutdown() {
     for (auto& worker : workers_) {
         if (worker.get_id() == std::this_thread::get_id()) {
-            throw std::runtime_error("ThreadPool::shutdown() called from a pool worker");
+            throw_errno("ThreadPool::shutdown() called from a pool worker");
         }
     }
     std::call_once(stop_flag_, [this] {
@@ -78,9 +80,9 @@ void ThreadPool::worker_thread() {
         try {
             task();
         } catch (std::exception& e) {
-            std::cerr << "[LOG] exception occurred in task execution: " << e.what() << std::endl;
+            LOG_ERROR() << "exception occurred in task execution: " << e.what();
         } catch (...) {
-            std::cerr << "[LOG] exception occurred in task execution" << std::endl;
+            LOG_ERROR() << "exception occurred in task execution";
         }
     }
 }
