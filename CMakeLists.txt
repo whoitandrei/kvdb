@@ -27,6 +27,7 @@ add_library(kvdb_lib STATIC
     src/socket.cpp
     src/tcp_server.cpp
     src/store.cpp
+    src/protocol.cpp
 )
 target_include_directories(kvdb_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(kvdb_lib PRIVATE -Wall -Wextra -Wpedantic)
