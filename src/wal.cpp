@@ -78,7 +78,7 @@ void Wal::append_del(const std::string& key) {
 void Wal::append_record(Op op, const std::string& key, const std::string& value) {
     auto key_len = static_cast<uint32_t>(key.size());
     auto value_len = static_cast<uint32_t>(value.size());
-    auto record_len = sizeof(uint8_t) + sizeof(key_len) + key_len + sizeof(value_len) + value_len;
+    uint32_t record_len = sizeof(uint8_t) + sizeof(key_len) + key_len + sizeof(value_len) + value_len;
 
     std::string buffer;
     buffer.reserve(sizeof(record_len) + record_len);
@@ -93,7 +93,7 @@ void Wal::append_record(Op op, const std::string& key, const std::string& value)
     buffer.append(value);
 
     std::lock_guard<std::mutex> lock(mutex_);
-    write_all(file_.get(), buffer.data(), sizeof(record_len) + record_len);
+    write_all(file_.get(), buffer.data(), buffer.size());
 }
 
 void Wal::replay(Store& store) const {
