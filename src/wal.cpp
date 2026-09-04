@@ -106,12 +106,9 @@ void Wal::replay(Store& store) const {
 
         uint32_t record_len = read_uint32(len_buf);
 
-        char buffer[record_len];
-        if (!read_exact(file_.get(), buffer, record_len))
+        std::string record(record_len, '\0');
+        if (!read_exact(file_.get(), record.data(), record_len))
             break;
-
-        std::string record(buffer);
-        record.resize(record_len);
 
         size_t pos = 0;
         auto op = static_cast<Op>(record[pos]);
