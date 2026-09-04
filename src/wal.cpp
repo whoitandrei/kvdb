@@ -1,8 +1,8 @@
 #include "wal.hpp"
 
-#include "utils.hpp"
 #include "logger.hpp"
- 
+#include "utils.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -10,7 +10,7 @@
 #include <mutex>
 #include <sys/socket.h>
 #include <unistd.h>
- 
+
 #include <cstring>
 
 // low-level helpers
@@ -21,7 +21,8 @@ void write_all(int fd, const char* data, size_t size) {
     while (written < size) {
         ssize_t n = ::write(fd, data + written, size - written);
         if (n < 0) {
-            if (errno == EINTR) continue;
+            if (errno == EINTR)
+                continue;
             throw_errno("write [wal]");
         }
         written += static_cast<size_t>(n);
@@ -33,10 +34,12 @@ bool read_exact(int fd, char* data, size_t size) {
     while (read_total < size) {
         ssize_t n = ::read(fd, data + read_total, size - read_total);
         if (n < 0) {
-            if (errno == EINTR) continue;
+            if (errno == EINTR)
+                continue;
             throw_errno("read [wal]");
         }
-        if (n == 0) return false;
+        if (n == 0)
+            return false;
         read_total += static_cast<size_t>(n);
     }
     return true;
@@ -98,12 +101,14 @@ void Wal::replay(Store& store) const {
 
     while (true) {
         char len_buf[sizeof(uint32_t)];
-        if (!read_exact(file_.get(), len_buf, sizeof(len_buf))) break;
+        if (!read_exact(file_.get(), len_buf, sizeof(len_buf)))
+            break;
 
         uint32_t record_len = read_uint32(len_buf);
 
         char buffer[record_len];
-        if (!read_exact(file_.get(), buffer, record_len)) break;
+        if (!read_exact(file_.get(), buffer, record_len))
+            break;
 
         std::string record(buffer);
         record.resize(record_len);
@@ -122,12 +127,12 @@ void Wal::replay(Store& store) const {
         std::string value = record.substr(pos, value_len);
 
         switch (op) {
-            case Op::kSet:
-                store.set(key, value);
-                break;
-            case Op::kDel:
-                store.del(key);
-                break;
+        case Op::kSet:
+            store.set(key, value);
+            break;
+        case Op::kDel:
+            store.del(key);
+            break;
         }
     }
 }

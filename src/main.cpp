@@ -6,6 +6,7 @@
 #include "utils.hpp"
 #include "handler.hpp"
 #include "logger.hpp"
+#include "wal.hpp"
 
 #include <csignal>
 #include <cstdio>
@@ -90,6 +91,9 @@ int main(int argc, char** argv) {
     ThreadPool pool(cfg.workers);
     TcpServer server(cfg.port);
     Logger::instance().set_level(parse_log_level(cfg.logger_level));
+    Wal wal("/Users/andrei/prog/kvdb/test.wal");
+
+    // wal.replay(store);
 
     g_server = &server;
     ::signal(SIGINT, handle_signal);
@@ -97,8 +101,8 @@ int main(int argc, char** argv) {
     LOG_INFO() << "listening on port " << server.port()
               << " with " << cfg.workers << " workers\n";
 
-    server.run(pool, [&store](Socket client) {
-        handle_connection(std::move(client), store);
+    server.run(pool, [&store, &wal](Socket client) {
+        handle_connection(std::move(client), store, wal);
     });
 
     LOG_INFO() << "server stopped\n";

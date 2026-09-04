@@ -3,3 +3,4 @@
 .clang-format
 docs
 .DS_Store
+*.wal

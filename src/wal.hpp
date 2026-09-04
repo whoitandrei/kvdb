@@ -7,24 +7,15 @@
 #include <mutex>
 #include <string>
 
-// Формат записи на диске:
-//
 //   [uint32 record_len]              // длина всего, что после этого поля
 //   [uint8  op]                      // 1 = SET, 2 = DEL
 //   [uint32 key_len][key bytes]
 //   [uint32 value_len][value bytes]  // value_len = 0 для DEL
-//
-// record_len ПЕРЕД остальными полями — чтобы при replay можно было
-// сначала проверить, хватает ли в файле байт на всю запись, и только
-// потом её парсить. Если не хватает (краш ровно посреди write()
-// последней записи, вероятный сценарий без fsync) — это трактуется
-// как штатно оборванный хвост, replay останавливается на нём, не
-// пытаясь интерпретировать частично записанные байты как поля.
 
 using FileDescriptor = Socket;
 
 class Wal {
-public:
+  public:
     explicit Wal(const std::string& path);
 
     void append_set(const std::string& key, const std::string& value);
@@ -34,7 +25,7 @@ public:
     Wal(const Wal&) = delete;
     Wal& operator=(const Wal&) = delete;
 
-private:
+  private:
     enum class Op : uint8_t {
         kSet = 1,
         kDel = 2,
