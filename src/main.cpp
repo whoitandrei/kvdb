@@ -1,11 +1,11 @@
+#include "handler.hpp"
 #include "logger.hpp"
 #include "socket.hpp"
 #include "store.hpp"
 #include "tcp_server.hpp"
 #include "thread_pool.hpp"
 #include "utils.hpp"
-#include "handler.hpp"
-#include "logger.hpp"
+#include "wal.hpp"
 
 #include <csignal>
 #include <cstdio>
@@ -79,7 +79,7 @@ Config parse_args(int argc, char** argv) {
     return cfg;
 }
 
-}  // namespace
+} // namespace
 
 int main(int argc, char** argv) {
     Config cfg = parse_args(argc, argv);
@@ -87,19 +87,20 @@ int main(int argc, char** argv) {
     ::signal(SIGPIPE, SIG_IGN);
 
     Store store;
+    Wal wal("test.wal");
     ThreadPool pool(cfg.workers);
     TcpServer server(cfg.port);
     Logger::instance().set_level(parse_log_level(cfg.logger_level));
 
+    // wal.replay(store);
+
     g_server = &server;
     ::signal(SIGINT, handle_signal);
 
-    LOG_INFO() << "listening on port " << server.port()
-              << " with " << cfg.workers << " workers\n";
+    LOG_INFO() << "listening on port " << server.port() << " with " << cfg.workers << " workers\n";
 
-    server.run(pool, [&store](Socket client) {
-        handle_connection(std::move(client), store);
-    });
+    server.run(pool,
+               [&store, &wal](Socket client) { handle_connection(std::move(client), store, wal); });
 
     LOG_INFO() << "server stopped\n";
     return 0;

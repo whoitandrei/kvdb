@@ -2,7 +2,7 @@
 #include "utils.hpp"
 #include <unistd.h>
 
-void handle_connection(Socket socket, Store& store) {
+void handle_connection(Socket socket, Store& store, Wal& wal) {
     std::string persistent_buffer;
     while (true) {
         // socket read
@@ -39,6 +39,7 @@ void handle_connection(Socket socket, Store& store) {
             std::string response;
             switch (cmd.type) {
             case CommandType::kSet:
+                wal.append_set(cmd.key, cmd.value);
                 store.set(cmd.key, cmd.value);
                 response = "OK\n";
                 break;
@@ -52,6 +53,7 @@ void handle_connection(Socket socket, Store& store) {
                 break;
             }
             case CommandType::kDel: {
+                wal.append_del(cmd.key);
                 bool deleted = store.del(cmd.key);
                 response = deleted ? "OK\n" : "NOT_FOUND\n";
                 break;
