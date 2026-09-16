@@ -56,7 +56,6 @@ TEST(ProtocolParseTest, ParseSetEmptyValue) {
 }
 
 TEST(ProtocolParseTest, ParseGetMissingKey) {
-    // Нет пробела вообще — отваливается ещё до сравнения с "GET".
     Command cmd = parse_command("GET");
     EXPECT_EQ(cmd.type, CommandType::kInvalid);
 }
@@ -84,6 +83,64 @@ TEST(ProtocolParseTest, ParseDelEmptyKey) {
 TEST(ProtocolParseTest, ParseDelExtraArgument) {
     Command cmd = parse_command("DEL key extra");
     EXPECT_EQ(cmd.type, CommandType::kInvalid);
+}
+
+
+TEST(ProtocolParseTest, TrimsCarriageReturn) {
+    Command cmd = parse_command("GET key\r");
+    EXPECT_EQ(cmd.type, CommandType::kGet);
+    EXPECT_EQ(cmd.key, "key");
+}
+
+TEST(ProtocolParseTest, TrimsLeadingAndTrailingSpaces) {
+    Command cmd = parse_command("   SET key value   ");
+    EXPECT_EQ(cmd.type, CommandType::kSet);
+    EXPECT_EQ(cmd.key, "key");
+    EXPECT_EQ(cmd.value, "value");
+}
+
+TEST(ProtocolParseTest, ParseWhitespaceOnlyLine) {
+    EXPECT_EQ(parse_command("   ").type, CommandType::kInvalid);
+    EXPECT_EQ(parse_command("\r").type, CommandType::kInvalid);
+}
+
+TEST(ProtocolParseTest, CommandNameIsCaseInsensitive) {
+    EXPECT_EQ(parse_command("get key").type, CommandType::kGet);
+    EXPECT_EQ(parse_command("Set key value").type, CommandType::kSet);
+}
+
+TEST(ProtocolParseTest, ParsePing) {
+    EXPECT_EQ(parse_command("PING").type, CommandType::kPing);
+    EXPECT_EQ(parse_command("PING\r").type, CommandType::kPing);
+    EXPECT_EQ(parse_command("PING extra").type, CommandType::kInvalid);
+}
+
+TEST(ProtocolParseTest, ParseDbSizeAndInfo) {
+    EXPECT_EQ(parse_command("DBSIZE").type, CommandType::kDbSize);
+    EXPECT_EQ(parse_command("INFO").type, CommandType::kInfo);
+    EXPECT_EQ(parse_command("INFO all").type, CommandType::kInvalid);
+}
+
+TEST(ProtocolParseTest, ParseValidScan) {
+    Command cmd = parse_command("SCAN 17 100");
+    EXPECT_EQ(cmd.type, CommandType::kScan);
+    EXPECT_EQ(cmd.cursor, 17u);
+    EXPECT_EQ(cmd.count, 100u);
+}
+
+TEST(ProtocolParseTest, ParseInvalidScan) {
+    EXPECT_EQ(parse_command("SCAN").type, CommandType::kInvalid);
+    EXPECT_EQ(parse_command("SCAN 0").type, CommandType::kInvalid);
+    EXPECT_EQ(parse_command("SCAN 0 0").type, CommandType::kInvalid);
+    EXPECT_EQ(parse_command("SCAN x 10").type, CommandType::kInvalid);
+    EXPECT_EQ(parse_command("SCAN -1 10").type, CommandType::kInvalid);
+    EXPECT_EQ(parse_command("SCAN 0 10 extra").type, CommandType::kInvalid);
+}
+
+TEST(ProtocolParseTest, InvalidCommandCarriesMessage) {
+    Command cmd = parse_command("FOO bar");
+    EXPECT_EQ(cmd.type, CommandType::kInvalid);
+    EXPECT_FALSE(cmd.error_message.empty());
 }
 
 }  // namespace
