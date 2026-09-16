@@ -1,4 +1,6 @@
+#include "executor.hpp"
 #include "handler.hpp"
+#include "stats.hpp"
 #include "logger.hpp"
 #include "socket.hpp"
 #include "store.hpp"
@@ -99,8 +101,10 @@ int main(int argc, char** argv) {
 
     LOG_INFO() << "listening on port " << server.port() << " with " << cfg.workers << " workers\n";
 
-    server.run(pool,
-               [&store, &wal](Socket client) { handle_connection(std::move(client), store, wal); });
+    Stats stats;
+    ServerContext ctx{store, wal, stats, pool};
+
+    server.run(pool, [&ctx](Socket client) { handle_connection(std::move(client), ctx); });
 
     LOG_INFO() << "server stopped\n";
     return 0;

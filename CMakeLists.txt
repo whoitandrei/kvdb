@@ -33,6 +33,7 @@ add_library(kvdb_lib STATIC
     src/handler.cpp
     src/logger.cpp
     src/wal.cpp
+    src/executor.cpp
 )
 target_include_directories(kvdb_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(kvdb_lib PRIVATE -Wall -Wextra -Wpedantic)

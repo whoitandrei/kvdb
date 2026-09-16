@@ -1,8 +1,6 @@
 #pragma once
 
+#include "executor.hpp"
 #include "socket.hpp"
-#include "store.hpp"
-#include "protocol.hpp"
-#include "wal.hpp"
 
-void handle_connection(Socket socket, Store& store, Wal& wal);
+void handle_connection(Socket socket, ServerContext ctx);
