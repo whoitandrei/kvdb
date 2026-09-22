@@ -1,9 +1,12 @@
 #pragma once
 
+#include "kvdb_client.hpp"
+
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QSpinBox>
+
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -12,6 +15,7 @@ class MainWindow : public QMainWindow {
 
   private slots:
     void toggleConnection();
+    void onConnectionLost();
 
   private:
     void applyConnectedState(bool connected);
@@ -20,5 +24,6 @@ class MainWindow : public QMainWindow {
     QLineEdit* host_ = nullptr;
     QSpinBox* port_ = nullptr;
     QPushButton* connect_button_ = nullptr;
-    bool connected_ = false;
+    KvdbClient* client_ = nullptr;
+    // QConsoleWidget 
 };
