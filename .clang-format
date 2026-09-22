@@ -5,4 +5,4 @@ UseTab: Never
 ColumnLimit: 100
 AllowShortIfStatementsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
-PointerAlignment: Left%
+PointerAlignment: Left

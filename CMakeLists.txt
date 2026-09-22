@@ -2,10 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 project(kvdb CXX)
 
 option(BUILD_BENCHMARK "Build the load-testing benchmark tool (fetches HdrHistogram_c)" OFF)
+option(BUILD_GUI "Build the Qt GUI client (requires Qt 6)" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
@@ -48,4 +50,8 @@ add_subdirectory(tests)
 
 if(BUILD_BENCHMARK)
     add_subdirectory(tools)
+endif()
+
+if(BUILD_GUI)
+    add_subdirectory(gui)
 endif()
