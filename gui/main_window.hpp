@@ -1,12 +1,12 @@
 #pragma once
 
+#include "console_widget.hpp"
 #include "kvdb_client.hpp"
 
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QSpinBox>
-
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -25,5 +25,5 @@ class MainWindow : public QMainWindow {
     QSpinBox* port_ = nullptr;
     QPushButton* connect_button_ = nullptr;
     KvdbClient* client_ = nullptr;
-    // QConsoleWidget 
+    ConsoleWidget* console_ = nullptr;
 };

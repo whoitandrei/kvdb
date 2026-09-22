@@ -28,7 +28,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     layoutGeneral->addLayout(toolbarLayout);
 
     auto* tab = new QTabWidget(central);
-    tab->addTab(new QWidget, "console");
+    console_ = new ConsoleWidget(*client_, this);
+    tab->addTab(console_, "console");
     layoutGeneral->addWidget(tab);
 
     setCentralWidget(central);
@@ -65,5 +66,6 @@ void MainWindow::applyConnectedState(bool connected) {
     connect_button_->setText(connected ? "disconnect" : "connect");
     port_->setEnabled(!connected);
     host_->setEnabled(!connected);
+    console_->setConnected(connected);
     statusBar()->showMessage(connected ? "[INFO] connected" : "[INFO] disconnected");
 }

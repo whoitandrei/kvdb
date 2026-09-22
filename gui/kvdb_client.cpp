@@ -35,41 +35,61 @@ bool KvdbClient::isConnected() const {
 }
 
 Reply KvdbClient::exec(const QString& command) {
-    if (socket_.state() != QTcpSocket::ConnectedState)
-        return Reply{.error = "no connection"};
-    if (command.contains("\n") || command.contains("\r"))
-        return Reply{.error = "command contains terminal symbols. aborting"};
+    Reply reply;
+
+    if (socket_.state() != QTcpSocket::ConnectedState) {
+        reply.error = QStringLiteral("no connection");
+        return reply;
+    }
+    if (command.contains(u'\n') || command.contains(u'\r')) {
+        reply.error = QStringLiteral("command must not contain line breaks");
+        return reply;
+    }
+
+    auto fail = [this](Reply r) {
+        socket_.abort();
+        return r;
+    };
 
     QElapsedTimer timer;
     timer.start();
 
     socket_.write(command.toUtf8() + '\n');
-    auto state = socket_.waitForBytesWritten(timeout_ms_);
-
-    if (!state) {
-        if (socket_.state() != QTcpSocket::ConnectedState)
-            return Reply{.error = socket_.errorString()};
-        else
-            return Reply{.error = "timeout for execution"};
+    if (!socket_.waitForBytesWritten(timeout_ms_)) {
+        reply.error = socket_.state() == QTcpSocket::ConnectedState
+                          ? QStringLiteral("timeout while sending")
+                          : socket_.errorString();
+        return fail(reply);
     }
 
-    Reply reply;
-    if (!readLine(reply.header, &reply.error))
-        return Reply{.error = "readLine internal error"};
+    if (!readLine(reply.header, &reply.error)) {
+        return fail(reply);
+    }
 
     const QStringList words = reply.header.split(u' ', Qt::SkipEmptyParts);
-    bool parsed = false;
-    const int n = words[1].toInt(&parsed);
+    const bool multiline = words.size() >= 2 && (words[0] == QStringLiteral("ITEMS") ||
+                                                 words[0] == QStringLiteral("FIELDS"));
 
-    if (n < 0)
-        return Reply{.error = "reply has < 0 lines. internal logic error"};
+    if (multiline) {
+        bool parsed = false;
+        const int n = words[1].toInt(&parsed);
+        if (!parsed || n < 0) {
+            reply.error = QStringLiteral("malformed header: ") + reply.header;
+            return fail(reply);
+        }
 
-    for (int i = 0; i < n; ++i) {
-        if (!readLine(reply.items[i], &reply.error)) return reply;
+        reply.items.reserve(n);
+        for (int i = 0; i < n; ++i) {
+            QString line;
+            if (!readLine(line, &reply.error)) {
+                return fail(reply);
+            }
+            reply.items.append(line);
+        }
     }
+
     reply.rtt_micros = timer.nsecsElapsed() / 1000;
     reply.ok = true;
-
     return reply;
 }
 

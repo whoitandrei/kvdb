@@ -11,7 +11,7 @@ struct Reply {
     QStringList items{};
     qint64 rtt_micros = 0;
 
-    bool isServerError() const;
+    bool isServerError() const { return ok && header.startsWith(QStringLiteral("ERROR:")); }
 };
 
 class KvdbClient : public QObject {
